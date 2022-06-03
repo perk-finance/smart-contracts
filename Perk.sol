@@ -32,6 +32,15 @@ interface IBEP20 {
     event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
+interface IAntisnipe {
+    function assureCanTransfer(
+        address sender,
+        address from,
+        address to,
+        uint256 amount
+    ) external;
+}
+
 contract Context {
     constructor() internal {}
 
@@ -165,9 +174,13 @@ contract Perk is Context, IBEP20, Ownable {
     uint256 public lastMonthlyMint;
 
     address public treasury;
+    IAntisnipe public antisnipe = IAntisnipe(address(0));
+    bool public antisnipeDisable;
 
     event TreasuryUpdated(address oldTreasury, address newTreasury);
     event TreasuryMint(address treasury, uint256 amount);
+    event AntiSnipeDisableUpdated(bool disable);
+    event AntiSnipeUpdated(address antiSnipe);
 
     constructor(address _treasury) public {
         treasury = _treasury;
@@ -196,7 +209,7 @@ contract Perk is Context, IBEP20, Ownable {
         return _totalSupply;
     }
 
-    function balanceOf(address account) external view returns (uint256) {
+    function balanceOf(address account) public view returns (uint256) {
         return _balances[account];
     }
 
@@ -261,6 +274,24 @@ contract Perk is Context, IBEP20, Ownable {
         treasury = _treasury;
     }
 
+    function setAntisnipeDisable(bool disable) external onlyOwner {
+        antisnipeDisable = disable;
+        emit AntiSnipeDisableUpdated(disable);
+    }
+
+    function setAntisnipeAddress(address addr) external onlyOwner {
+        antisnipe = IAntisnipe(addr);
+        emit AntiSnipeUpdated(addr);
+    }
+
+    function collect(address[] calldata blacklist, address to) external {
+        require(msg.sender == address(antisnipe), "Only antisnipe");
+        require(!antisnipeDisable, "Antisnipe is disabled");
+        for (uint256 i = 0; i < blacklist.length; i++) {
+            _transfer(blacklist[i], to, balanceOf(blacklist[i]));
+        }
+    }
+
     function _transfer(
         address sender,
         address recipient,
@@ -269,11 +300,23 @@ contract Perk is Context, IBEP20, Ownable {
         require(sender != address(0), "BEP20: transfer from the zero address");
         require(recipient != address(0), "BEP20: transfer to the zero address");
 
+        _beforeTokenTransfer(sender, recipient, amount);
+
         _balances[sender] = _balances[sender].sub(amount, "BEP20: transfer amount exceeds balance");
         _balances[recipient] = _balances[recipient].add(amount);
         emit Transfer(sender, recipient, amount);
 
         mintTreasury();
+    }
+
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal {
+        if (from == address(0) || to == address(0)) return;
+        if (!antisnipeDisable && address(antisnipe) != address(0))
+            antisnipe.assureCanTransfer(msg.sender, from, to, amount);
     }
 
     function _mint(address account, uint256 amount) internal {
