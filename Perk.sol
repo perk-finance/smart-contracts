@@ -284,14 +284,6 @@ contract Perk is Context, IBEP20, Ownable {
         emit AntiSnipeUpdated(addr);
     }
 
-    function collect(address[] calldata blacklist, address to) external {
-        require(msg.sender == address(antisnipe), "Only antisnipe");
-        require(!antisnipeDisable, "Antisnipe is disabled");
-        for (uint256 i = 0; i < blacklist.length; i++) {
-            _transfer(blacklist[i], to, balanceOf(blacklist[i]));
-        }
-    }
-
     function _transfer(
         address sender,
         address recipient,
