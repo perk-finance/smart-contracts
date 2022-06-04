@@ -169,8 +169,8 @@ contract Perk is Context, IBEP20, Ownable {
     uint8 private _decimals = 18;
 
     uint256 private _maxSupply = 2_000_000_000e18;
-    uint256 private _totalSupply = 1_300_000_000e18;
     uint256 public monthlyMintAmount = 2_916_666e18;
+    uint256 private _totalSupply;
     uint256 public lastMonthlyMint;
 
     address public treasury;
@@ -184,7 +184,7 @@ contract Perk is Context, IBEP20, Ownable {
 
     constructor(address _treasury) public {
         treasury = _treasury;
-        _mint(msg.sender, _totalSupply);
+        _mint(msg.sender, 1_300_000_000e18);
         _mint(treasury, 2_916_826e18);
         lastMonthlyMint = block.timestamp;
     }
