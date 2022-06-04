@@ -162,7 +162,7 @@ contract Perk is Context, IBEP20, Ownable {
 
     mapping(address => mapping(address => uint256)) private _allowances;
 
-    uint256 public ONE_MONTH = 2629743;
+    uint256 public mintInterval;
 
     string private _name = "Perk";
     string private _symbol = "PRK";
@@ -187,6 +187,7 @@ contract Perk is Context, IBEP20, Ownable {
         _mint(msg.sender, 1_300_000_000e18);
         _mint(treasury, 2_916_826e18);
         lastMonthlyMint = block.timestamp;
+        mintInterval = 2629743;
     }
 
     function getOwner() external view returns (address) {
@@ -256,9 +257,9 @@ contract Perk is Context, IBEP20, Ownable {
     }
 
     function mintTreasury() public {
-        if (block.timestamp >= lastMonthlyMint.add(ONE_MONTH) && _totalSupply.add(monthlyMintAmount) <= _maxSupply) {
+        if (block.timestamp >= lastMonthlyMint.add(mintInterval) && _totalSupply.add(monthlyMintAmount) <= _maxSupply) {
             _mint(treasury, monthlyMintAmount);
-            lastMonthlyMint = lastMonthlyMint.add(ONE_MONTH);
+            lastMonthlyMint = lastMonthlyMint.add(mintInterval);
             emit TreasuryMint(treasury, monthlyMintAmount);
         }
     }
