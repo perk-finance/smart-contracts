@@ -139,12 +139,12 @@ contract Ownable is Context {
         _;
     }
 
-    function renounceOwnership() public onlyOwner {
+    function renounceOwnership() external onlyOwner {
         emit OwnershipTransferred(_owner, address(0));
         _owner = address(0);
     }
 
-    function transferOwnership(address newOwner) public onlyOwner {
+    function transferOwnership(address newOwner) external onlyOwner {
         _transferOwnership(newOwner);
     }
 
@@ -162,14 +162,14 @@ contract Perk is Context, IBEP20, Ownable {
 
     mapping(address => mapping(address => uint256)) private _allowances;
 
-    uint256 public mintInterval;
+    string private constant _name = "Perk";
+    string private constant _symbol = "PRK";
+    uint8 private constant _decimals = 18;
 
-    string private _name = "Perk";
-    string private _symbol = "PRK";
-    uint8 private _decimals = 18;
+    uint256 public constant MAX_SUPPLY = 2_000_000_000e18;
+    uint256 public constant MONTHLY_MINT_AMOUNT = 2_916_666e18;
+    uint256 public constant ONE_MONTH = 2629743;
 
-    uint256 private _maxSupply = 2_000_000_000e18;
-    uint256 public monthlyMintAmount = 2_916_666e18;
     uint256 private _totalSupply;
     uint256 public lastMonthlyMint;
 
@@ -183,11 +183,11 @@ contract Perk is Context, IBEP20, Ownable {
     event AntiSnipeUpdated(address antiSnipe);
 
     constructor(address _treasury) public {
+        require(_treasury != address(0), "_treasury zero address");
         treasury = _treasury;
         _mint(msg.sender, 1_300_000_000e18);
         _mint(treasury, 2_916_826e18);
         lastMonthlyMint = block.timestamp;
-        mintInterval = 2629743;
     }
 
     function getOwner() external view returns (address) {
@@ -210,7 +210,7 @@ contract Perk is Context, IBEP20, Ownable {
         return _totalSupply;
     }
 
-    function balanceOf(address account) public view returns (uint256) {
+    function balanceOf(address account) external view returns (uint256) {
         return _balances[account];
     }
 
@@ -242,12 +242,12 @@ contract Perk is Context, IBEP20, Ownable {
         return true;
     }
 
-    function increaseAllowance(address spender, uint256 addedValue) public returns (bool) {
+    function increaseAllowance(address spender, uint256 addedValue) external returns (bool) {
         _approve(_msgSender(), spender, _allowances[_msgSender()][spender].add(addedValue));
         return true;
     }
 
-    function decreaseAllowance(address spender, uint256 subtractedValue) public returns (bool) {
+    function decreaseAllowance(address spender, uint256 subtractedValue) external returns (bool) {
         _approve(
             _msgSender(),
             spender,
@@ -257,20 +257,20 @@ contract Perk is Context, IBEP20, Ownable {
     }
 
     function mintTreasury() public {
-        if (block.timestamp >= lastMonthlyMint.add(mintInterval) && _totalSupply.add(monthlyMintAmount) <= _maxSupply) {
-            _mint(treasury, monthlyMintAmount);
-            lastMonthlyMint = lastMonthlyMint.add(mintInterval);
-            emit TreasuryMint(treasury, monthlyMintAmount);
+        if (block.timestamp >= lastMonthlyMint.add(ONE_MONTH) && _totalSupply.add(MONTHLY_MINT_AMOUNT) <= MAX_SUPPLY) {
+            _mint(treasury, MONTHLY_MINT_AMOUNT);
+            lastMonthlyMint = lastMonthlyMint.add(ONE_MONTH);
+            emit TreasuryMint(treasury, MONTHLY_MINT_AMOUNT);
         }
     }
 
-    function burn(address account, uint256 amount) public onlyOwner returns (bool) {
-        _burn(account, amount);
+    function burn(uint256 amount) external returns (bool) {
+        _burn(_msgSender(), amount);
         return true;
     }
 
-    function updateTreasury(address _treasury) public onlyOwner {
-        require(_treasury != address(0), "Invalid treasury address!");
+    function updateTreasury(address _treasury) external onlyOwner {
+        require(_treasury != address(0), "_treasury zero address!");
         emit TreasuryUpdated(treasury, _treasury);
         treasury = _treasury;
     }
